@@ -30,6 +30,9 @@
         {
             this.components = new System.ComponentModel.Container();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.lbMemTotal = new System.Windows.Forms.Label();
+            this.pbMem = new System.Windows.Forms.ProgressBar();
+            this.pbCpu = new System.Windows.Forms.ProgressBar();
             this.lbIpAddress = new System.Windows.Forms.Label();
             this.lbMem = new System.Windows.Forms.Label();
             this.lbCpu = new System.Windows.Forms.Label();
@@ -41,6 +44,9 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.lbMemTotal);
+            this.groupBox1.Controls.Add(this.pbMem);
+            this.groupBox1.Controls.Add(this.pbCpu);
             this.groupBox1.Controls.Add(this.lbIpAddress);
             this.groupBox1.Controls.Add(this.lbMem);
             this.groupBox1.Controls.Add(this.lbCpu);
@@ -52,6 +58,29 @@
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "groupBox1";
+            // 
+            // lbMemTotal
+            // 
+            this.lbMemTotal.AutoSize = true;
+            this.lbMemTotal.Location = new System.Drawing.Point(301, 84);
+            this.lbMemTotal.Name = "lbMemTotal";
+            this.lbMemTotal.Size = new System.Drawing.Size(52, 15);
+            this.lbMemTotal.TabIndex = 7;
+            this.lbMemTotal.Text = "( 0 MB )";
+            // 
+            // pbMem
+            // 
+            this.pbMem.Location = new System.Drawing.Point(118, 76);
+            this.pbMem.Name = "pbMem";
+            this.pbMem.Size = new System.Drawing.Size(105, 23);
+            this.pbMem.TabIndex = 6;
+            // 
+            // pbCpu
+            // 
+            this.pbCpu.Location = new System.Drawing.Point(118, 41);
+            this.pbCpu.Name = "pbCpu";
+            this.pbCpu.Size = new System.Drawing.Size(105, 23);
+            this.pbCpu.TabIndex = 5;
             // 
             // lbIpAddress
             // 
@@ -65,7 +94,7 @@
             // lbMem
             // 
             this.lbMem.AutoSize = true;
-            this.lbMem.Location = new System.Drawing.Point(118, 67);
+            this.lbMem.Location = new System.Drawing.Point(246, 84);
             this.lbMem.Name = "lbMem";
             this.lbMem.Size = new System.Drawing.Size(36, 15);
             this.lbMem.TabIndex = 3;
@@ -74,7 +103,7 @@
             // lbCpu
             // 
             this.lbCpu.AutoSize = true;
-            this.lbCpu.Location = new System.Drawing.Point(119, 43);
+            this.lbCpu.Location = new System.Drawing.Point(246, 43);
             this.lbCpu.Name = "lbCpu";
             this.lbCpu.Size = new System.Drawing.Size(24, 15);
             this.lbCpu.TabIndex = 2;
@@ -83,7 +112,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(20, 70);
+            this.label2.Location = new System.Drawing.Point(18, 79);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(75, 15);
             this.label2.TabIndex = 1;
@@ -127,5 +156,8 @@
         private Label label2;
         private Label label1;
         private System.Windows.Forms.Timer timer1;
+        private Label lbMemTotal;
+        private ProgressBar pbMem;
+        private ProgressBar pbCpu;
     }
 }
