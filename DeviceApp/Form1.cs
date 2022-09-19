@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Management;
 using MySql.Data.MySqlClient;
+using System.Windows.Forms;
 
 namespace DeviceApp
 {
@@ -32,7 +33,7 @@ namespace DeviceApp
                 SetMachineInfo();
                 GetDatabaseInfo();
             }
-            initSocketServer();
+            
         }
 
         delegate void Callback(string message);
@@ -60,12 +61,15 @@ namespace DeviceApp
                 }
 
             }
-            catch (Exception ex) { }
+            catch (Exception ex) {
+                Debug.WriteLine(ex.ToString());
+            }
         }
 
         private void DebugTextBox(string message)
         {
-            tbLog.Text = message + "\n";
+            tbLog.Invoke((MethodInvoker)delegate { tbLog.AppendText(message + "\r\n"); });
+            tbLog.Invoke((MethodInvoker)delegate { tbLog.ScrollToCaret(); });
         }
 
 
@@ -244,6 +248,13 @@ namespace DeviceApp
             {
                 if (conn != null) conn.Close();
             }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            Thread thread = new Thread(initSocketServer);
+            thread.IsBackground = true;s
+            thread.Start();
         }
     }
 }
