@@ -32,7 +32,76 @@ namespace DeviceApp
                 SetMachineInfo();
                 GetDatabaseInfo();
             }
+            initSocketServer();
         }
+
+        delegate void Callback(string message);
+
+        private void initSocketServer ()
+        {
+            try
+            {
+
+                Callback callback = new Callback(DebugTextBox);
+
+                TcpListener server = new TcpListener(IPAddress.Parse(localhostIp), 9000);
+                server.Start();
+
+                callback("클라이언트 접속 대기중..");
+
+
+                int count = 0;
+                while (true)
+                {
+                    TcpClient client = server.AcceptTcpClient();
+                    ClientSocket cSocket = new ClientSocket(count, client);
+                    cSocket.callback = callback;
+                    cSocket.connect();
+                }
+
+            }
+            catch (Exception ex) { }
+        }
+
+        private void DebugTextBox(string message)
+        {
+            tbLog.Text = message + "\n";
+        }
+
+
+        class ClientSocket
+        {
+            private int clientId = 0;
+            private TcpClient client;
+            public Callback callback;
+            private StreamReader receiver;
+            private StreamWriter sender;
+
+            public ClientSocket(int clientId, TcpClient client)
+            {
+                this.clientId = clientId;
+                this.client = client;
+                this.receiver = new StreamReader(client.GetStream());
+                this.sender = new StreamWriter(client.GetStream());
+            }
+
+            public void connect ()
+            {
+                Thread thread = new Thread(worker);
+                thread.Start();
+            }
+
+            public void worker ()
+            {
+                callback("클라이언트 접속..");
+                while (client.Connected)
+                {
+                    string message = receiver.ReadLine();
+                    callback(message);
+                }
+            }
+        }
+
 
         private void GetMemory()
         {
