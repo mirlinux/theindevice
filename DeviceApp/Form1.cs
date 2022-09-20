@@ -5,9 +5,13 @@ using System.Management;
 using MySql.Data.MySqlClient;
 using System.Windows.Forms;
 using System.Collections;
+using System.Text.RegularExpressions;
 
 namespace DeviceApp
 {
+    delegate void Callback(string message);
+    delegate Hashtable GetStatus();
+
     public partial class Form1 : Form
     {
 
@@ -37,8 +41,7 @@ namespace DeviceApp
             
         }
 
-        delegate void Callback(string message);
-        delegate Hashtable GetStatus();
+        
 
         private Hashtable getMachineStatus()
         {
@@ -60,9 +63,6 @@ namespace DeviceApp
                 TcpListener server = new TcpListener(IPAddress.Parse(localhostIp), 9000);
                 server.Start();
 
-                callback("클라이언트 접속 대기중..");
-
-
                 int count = 0;
                 while (true)
                 {
@@ -83,51 +83,27 @@ namespace DeviceApp
         {
             tbLog.Invoke((MethodInvoker)delegate { tbLog.AppendText(message + "\r\n"); });
             tbLog.Invoke((MethodInvoker)delegate { tbLog.ScrollToCaret(); });
+            tbLog.Invoke((MethodInvoker)delegate { DebugTextColor("SEND", Color.Red); });
+            tbLog.Invoke((MethodInvoker)delegate { DebugTextColor("RECV", Color.Blue); });
         }
-
-
-        class ClientSocket
+        private void DebugTextColor(string target, Color color)
         {
-            private int clientId = 0;
-            private TcpClient client;
-            public Callback callback;
-            public GetStatus status;
-            private StreamReader receiver;
-            private StreamWriter sender;
-            private string ip = "";
-            
-            public ClientSocket(int clientId, TcpClient client, string ip)
-            {
-                this.clientId = clientId;
-                this.client = client;
-                this.receiver = new StreamReader(client.GetStream());
-                this.sender = new StreamWriter(client.GetStream());
-                this.sender.AutoFlush = true;
-                this.ip = ip;
-            }
+            Regex regex = new Regex(target);
+            MatchCollection mc = regex.Matches(tbLog.Text);
+            int iCursorPosition = tbLog.SelectionStart;
 
-            public void connect ()
+            foreach (Match m in mc)
             {
-                Thread thread = new Thread(worker);
-                thread.Start();
-            }
+                int iStartIdx = m.Index;
+                int iStopIdx = m.Length;
 
-            public void worker ()
-            {
-                callback("클라이언트 접속..");
-
-                // 최초로 접속시 Client에게 CONNECT 정보를 전달해 준다.
-                sender.WriteLine("CONNECT:"+ Environment.MachineName+";"+ip);
-                // "CONNECT:LOCALHOSTNAME;192.168.0.8"
-                Hashtable data = status();
-                Debug.WriteLine("MEM = "+data["MEM"]);
-                while (client.Connected)
-                {
-                    string message = receiver.ReadLine();
-                    callback(message);
-                }
+                tbLog.Select(iStartIdx, iStopIdx);
+                tbLog.SelectionColor = color;
+                tbLog.SelectionStart = iCursorPosition;
+                tbLog.SelectionColor = Color.Black;
             }
         }
+
 
 
         private void GetMemory()
@@ -278,6 +254,54 @@ namespace DeviceApp
             Thread thread = new Thread(initSocketServer);
             thread.IsBackground = true;
             thread.Start();
+        }
+    }
+
+    class ClientSocket
+    {
+        private int clientId = 0;
+        private TcpClient client;
+        public Callback callback;
+        public GetStatus status;
+        private StreamReader receiver;
+        private StreamWriter sender;
+        private string ip = "";
+
+        public ClientSocket(int clientId, TcpClient client, string ip)
+        {
+            this.clientId = clientId;
+            this.client = client;
+            this.receiver = new StreamReader(client.GetStream());
+            this.sender = new StreamWriter(client.GetStream());
+            this.sender.AutoFlush = true;
+            this.ip = ip;
+        }
+
+        public void connect()
+        {
+            Thread thread = new Thread(worker);
+            thread.Start();
+        }
+
+        public void worker()
+        {
+            Socket c = client.Client;
+            IPEndPoint ip_point = (IPEndPoint)c.RemoteEndPoint;
+            string client_ip = ip_point.Address.ToString();
+            callback("Connected Client [" + client_ip + "]");
+
+            // 최초로 접속시 Client에게 CONNECT 정보를 전달해 준다.
+            string sendData = "CONNECT:" + Environment.MachineName + ";" + ip;
+            callback("SEND [" + sendData + "]");
+            sender.WriteLine(sendData);
+            // "CONNECT:LOCALHOSTNAME;192.168.0.8"
+            Hashtable data = status();
+            Debug.WriteLine("MEM = " + data["MEM"]);
+            while (client.Connected)
+            {
+                string message = receiver.ReadLine();
+                callback("RECV [" + message + "]");
+            }
         }
     }
 }
