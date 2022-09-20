@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Management;
 using MySql.Data.MySqlClient;
 using System.Windows.Forms;
+using System.Collections;
 
 namespace DeviceApp
 {
@@ -37,6 +38,15 @@ namespace DeviceApp
         }
 
         delegate void Callback(string message);
+        delegate Hashtable GetStatus();
+
+        private Hashtable getMachineStatus()
+        {
+            Hashtable status = new Hashtable();
+            status.Add("IP", localhostIp);
+            status.Add("MEM", iTotalMem);
+            return status;
+        }
 
         private void initSocketServer ()
         {
@@ -44,6 +54,8 @@ namespace DeviceApp
             {
 
                 Callback callback = new Callback(DebugTextBox);
+                GetStatus getStatus = new GetStatus(getMachineStatus);
+
 
                 TcpListener server = new TcpListener(IPAddress.Parse(localhostIp), 9000);
                 server.Start();
@@ -55,8 +67,9 @@ namespace DeviceApp
                 while (true)
                 {
                     TcpClient client = server.AcceptTcpClient();
-                    ClientSocket cSocket = new ClientSocket(count, client);
+                    ClientSocket cSocket = new ClientSocket(count, client, localhostIp);
                     cSocket.callback = callback;
+                    cSocket.status = getStatus; 
                     cSocket.connect();
                 }
 
@@ -78,15 +91,19 @@ namespace DeviceApp
             private int clientId = 0;
             private TcpClient client;
             public Callback callback;
+            public GetStatus status;
             private StreamReader receiver;
             private StreamWriter sender;
-
-            public ClientSocket(int clientId, TcpClient client)
+            private string ip = "";
+            
+            public ClientSocket(int clientId, TcpClient client, string ip)
             {
                 this.clientId = clientId;
                 this.client = client;
                 this.receiver = new StreamReader(client.GetStream());
                 this.sender = new StreamWriter(client.GetStream());
+                this.sender.AutoFlush = true;
+                this.ip = ip;
             }
 
             public void connect ()
@@ -98,6 +115,12 @@ namespace DeviceApp
             public void worker ()
             {
                 callback("클라이언트 접속..");
+
+                // 최초로 접속시 Client에게 CONNECT 정보를 전달해 준다.
+                sender.WriteLine("CONNECT:"+ Environment.MachineName+";"+ip);
+                // "CONNECT:LOCALHOSTNAME;192.168.0.8"
+                Hashtable data = status();
+                Debug.WriteLine("MEM = "+data["MEM"]);
                 while (client.Connected)
                 {
                     string message = receiver.ReadLine();
@@ -253,7 +276,7 @@ namespace DeviceApp
         private void Form1_Load(object sender, EventArgs e)
         {
             Thread thread = new Thread(initSocketServer);
-            thread.IsBackground = true;s
+            thread.IsBackground = true;
             thread.Start();
         }
     }
