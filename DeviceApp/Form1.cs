@@ -21,6 +21,9 @@ namespace DeviceApp
 
         ManagementClass cls = new ManagementClass("Win32_OperatingSystem");
 
+        double dCpu;
+        double memUsage;
+        int memPercent;
         private int iTotalMem = 0;
 
         private string localhostName = Environment.MachineName;
@@ -47,7 +50,10 @@ namespace DeviceApp
         {
             Hashtable status = new Hashtable();
             status.Add("IP", localhostIp);
-            status.Add("MEM", iTotalMem);
+            status.Add("MEM_TOTAL", iTotalMem);
+            status.Add("MEM_USAGE", memUsage);
+            status.Add("MEM_PERCENT", memPercent);
+            status.Add("CPU", dCpu);
             return status;
         }
 
@@ -207,16 +213,15 @@ namespace DeviceApp
                 if (conn != null) conn.Close();
             }
         }
-
-
+        
         private void timer1_Tick(object sender, EventArgs e)
         {
-            double dCpu = Math.Round(cpu.NextValue(), 2);
+            dCpu = Math.Round(cpu.NextValue(), 2);
             lbCpu.Text = dCpu.ToString() + " %";
             pbCpu.Value = (int)dCpu;
 
-            double memUsage = mem.NextValue();
-            int memPercent = (int)((memUsage / (double)iTotalMem) * 100);
+            memUsage = mem.NextValue();
+            memPercent = (int)((memUsage / (double)iTotalMem) * 100);
 
             lbMem.Text = String.Format("{0:N0} MB", mem.NextValue());
             pbMem.Value = memPercent;
@@ -295,12 +300,46 @@ namespace DeviceApp
             callback("SEND [" + sendData + "]");
             sender.WriteLine(sendData);
             // "CONNECT:LOCALHOSTNAME;192.168.0.8"
-            Hashtable data = status();
-            Debug.WriteLine("MEM = " + data["MEM"]);
+            
             while (client.Connected)
             {
                 string message = receiver.ReadLine();
                 callback("RECV [" + message + "]");
+                string[] dataArray = message.Split(":");
+                string command = dataArray[0];
+                string body = dataArray[1];
+                switch(command)
+                {
+                    case "GET_STATUS":
+                        sendStatusData();
+                        break;
+                    case "STOP_STATUS":
+                        isSendStatus = false;
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+        }
+        bool isSendStatus = false;
+        private void sendStatusData()
+        {
+            isSendStatus = true;
+            Thread t = new Thread(sendStatus);
+            t.Start();
+        }
+        private void sendStatus()
+        {
+            while (isSendStatus)
+            {
+                Hashtable data = status();
+                string statusData = "" + data["CPU"] + ";" + data["MEM_TOTAL"] + ";"
+                    + data["MEM_USAGE"] + ";" + data["MEM_PERCENT"];
+                string sendData = "STATUS:" + statusData;
+                sender.WriteLine(sendData);
+                callback("SEND [" + sendData + "]");
+                Thread.Sleep(1000);
             }
         }
     }
